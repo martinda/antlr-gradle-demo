@@ -1,0 +1,59 @@
+plugins {
+    id 'antlr'
+    id 'groovy'
+    id 'application'
+}
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    antlr 'org.antlr:antlr4:4.7.1'
+    compile 'net.sourceforge.argparse4j:argparse4j:0.8.1'
+    compile 'org.codehaus.groovy:groovy-all:2.4.7'
+    testCompile('org.spockframework:spock-core:1.0-groovy-2.4') {
+        exclude module: 'groovy-all'
+    }
+}
+
+generateGrammarSource {
+    arguments += ["-Xexact-output-dir", '-visitor']
+    doLast {
+        println("${arguments}")
+    }
+}
+
+/**
+ * Application plugin configuration
+ */
+
+startScripts {
+    enabled = false
+}
+
+run.enabled = false
+
+task createVeeloxCompiler(type: CreateStartScripts) {
+    description 'craete he start script for the veelox compiler'
+    mainClassName = 'ca.martinda.veelox.VeeloxCompiler'
+    outputDir = startScripts.outputDir
+    classpath = startScripts.classpath
+    applicationName = 'veeloxc'
+    defaultJvmOpts = ["-Dca.martinda.veelox.appName=${applicationName}"]
+}
+
+applicationDistribution.into("bin") {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(createVeeloxCompiler)
+    fileMode = 0755
+}
+
+test {
+    // listen to events in the test execution lifecycle
+    beforeTest { descriptor ->
+       logger.lifecycle("Running test: " + descriptor)
+    }
+}
